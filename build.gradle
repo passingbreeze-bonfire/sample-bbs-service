@@ -1,0 +1,74 @@
+import org.graalvm.buildtools.gradle.dsl.NativeImageOptions
+
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.5'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.graalvm.buildtools.native' version '0.10.6'
+}
+
+group = 'com.passingbreeze'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	set('springCloudVersion', "2024.0.1")
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+	compileOnly 'org.projectlombok:lombok'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+
+// GraalVM Native Image 빌드 설정
+graalvmNative {
+	binaries {
+		main {
+			imageName = project.name // 생성될 네이티브 실행 파일의 이름 (확장자 없이)
+			buildArgs.addAll(
+					'--verbose',                            // 빌드 과정 상세 로깅
+					// "-H:Name=${project.name}",           // imageName으로 대체 가능
+					'--static', '--libc=musl',              // Alpine Linux용 정적 빌드 (호환성 주의)
+					'--no-fallback',                        // 폴백 이미지 생성 안함
+					'-H:+ReportExceptionStackTraces',       // 예외 발생 시 스택 트레이스 상세 보고
+					'--enable-url-protocols=http,https',    // HTTP/HTTPS 프로토콜 사용 명시
+					'-H:+UnlockExperimentalVMOptions',
+					// '--enable-preview'                   // Java Preview 기능 사용 시
+					 "-H:+UseSVMContinuations"            // 가상 스레드 사용 시 (Java 21+)
+			)
+			 metadataRepository { enabled = true as NativeImageOptions } // GraalVM Reachability Metadata Repository 사용
+		}
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

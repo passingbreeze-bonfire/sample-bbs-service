@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: samplebbs
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/samplebbs
+      database: samplebbs
+
+  main:
+    web-application-type: servlet
+
+server:
+    port: 8080
+    servlet:
+        context-path: /api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,prometheus"
+  endpoint:
+    health:
+      show-details: always
+
+  server:
+    port: ${server.port}
+    base-path: /
+

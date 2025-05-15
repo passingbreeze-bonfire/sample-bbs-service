@@ -1,0 +1,6 @@
+terraform/
+k8s/
+.git/
+.idea/
+.gitignore
+README.md
